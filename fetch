@@ -4,7 +4,7 @@ require 'optparse'
 require 'fileutils'
 require "open-uri"
 require "uri"
-require "pry-byebug"
+
 module PageCrawler
   SAVE_FOLDER = Dir.home + "/fetch/"
   HTTP_TIMEOUT = 5
@@ -12,7 +12,7 @@ module PageCrawler
 
   class << self
     #
-    # Simple command line parser
+    # Simple command line parser, NOTE: OptionParser by default modify the content of args directly
     #
     # @param [Array<String>] args List of all arguments
     #
@@ -28,9 +28,9 @@ module PageCrawler
         end
       end
 
-      option_parser.parse!(ARGV)
+      option_parser.parse!(args)
 
-      return options
+      return args, options
     end
 
     #
@@ -98,9 +98,9 @@ module PageCrawler
     # @param [Array<String>] args array of strings corresponding to all passed arguments
     #
     def fetch_pages(args)
-      options = parse_options(args)
+      urls, options = parse_options(args)
 
-      fetch_pages_data(urls: ARGV, options: options)
+      fetch_pages_data(urls: args, options: options)
     end
   end
 end
