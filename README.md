@@ -1,4 +1,5 @@
 # tiny_crawler_assignment
+Completion time for step 1 and 2: around ~1h30
 
 ## Current State
 At the moment the code is written so that it matches the requirements. It was also written in a way would facilitate improvements in the future (they will be described later in the document)
