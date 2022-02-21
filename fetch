@@ -11,6 +11,13 @@ module PageCrawler
   TIME_FORMAT = "%a %b %Y %H:%M %Z"
 
   class << self
+    #
+    # Simple command line parser
+    #
+    # @param [Array<String>] args List of all arguments
+    #
+    # @return [Hash<Symbol, Boolean] return a hash of options
+    #
     def parse_options(args)
       options = {}
 
@@ -26,6 +33,11 @@ module PageCrawler
       return options
     end
 
+    #
+    # Print on stdout metadata of the saved html file
+    #
+    # @param [String] file_path Path to an existing html file created from #save_page_to_local
+    #
     def print_page_metadata(file_path:)
       file_stats = File.stat(file_path)
       html = File.read(file_path)
@@ -34,20 +46,35 @@ module PageCrawler
         site: #{File.basename(file_path, ".html")}
         numlink: #{html.scan(/<a [^>]*>/).count}
         images: #{html.scan(/<img [^>]*>/).count}
-        last_fetch: #{file_stats.ctime.utc.strftime(TIME_FORMAT)}
+        last_fetch: #{file_stats.ctime.utc.strftime(TIME_FORMAT)}\n
       FSTATS
 
       puts stats
     end
 
+    #
+    # Attempt to save page to local disk,
+    #
+    # @param [<URI>] uri URI instance
+    # @param [<String>] dir_path Path to the save folder (must already exists)
+    #
+    # @return [String] File path to the saved file
+    #
     def save_page_to_local(uri:, dir_path: SAVE_FOLDER)
       file_path = "#{dir_path}#{uri.host}.html"
 
-      File.open(file_path, "w") { | f | f.write(uri.open.read) }
+      File.open(file_path, "w") { | f | f.write(uri.open(read_timeout: HTTP_TIMEOUT).read) }
 
       file_path
     end
 
+    #
+    # Save html to files for each url given, and apply options as necessary
+    #
+    # @param [Array<String>] urls array of strings corresponding to all passed urls
+    # @param [Hash<Symbol, Boolean>] options List of options and their values { metadata: true/false }
+    # @param [Boolean] raise_exception flag to raise exception or not when during the page fetch
+    #
     def fetch_pages_data(urls:, options:, raise_exception: true)
       # Ensure save folder path exists
       FileUtils.mkdir_p(SAVE_FOLDER)
@@ -65,6 +92,11 @@ module PageCrawler
       end
     end
 
+    #
+    # Entry point for that module
+    #
+    # @param [Array<String>] args array of strings corresponding to all passed arguments
+    #
     def fetch_pages(args)
       options = parse_options(args)
 
