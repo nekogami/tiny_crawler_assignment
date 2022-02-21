@@ -1,0 +1,76 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'fileutils'
+require "open-uri"
+require "uri"
+require "pry-byebug"
+module PageCrawler
+  SAVE_FOLDER = Dir.home + "/fetch/"
+  HTTP_TIMEOUT = 5
+  TIME_FORMAT = "%a %b %Y %H:%M %Z"
+
+  class << self
+    def parse_options(args)
+      options = {}
+
+      option_parser = OptionParser.new do | opts |
+
+        opts.on("--metadata", "Print metadata instead") do | opt |
+          options[:metadata] = opt
+        end
+      end
+
+      option_parser.parse!(ARGV)
+
+      return options
+    end
+
+    def print_page_metadata(file_path:)
+      file_stats = File.stat(file_path)
+      html = File.read(file_path)
+
+      stats = <<~FSTATS
+        site: #{File.basename(file_path, ".html")}
+        numlink: #{html.scan(/<a [^>]*>/).count}
+        images: #{html.scan(/<img [^>]*>/).count}
+        last_fetch: #{file_stats.ctime.utc.strftime(TIME_FORMAT)}
+      FSTATS
+
+      puts stats
+    end
+
+    def save_page_to_local(uri:, dir_path: SAVE_FOLDER)
+      file_path = "#{dir_path}#{uri.host}.html"
+
+      File.open(file_path, "w") { | f | f.write(uri.open.read) }
+
+      file_path
+    end
+
+    def fetch_pages_data(urls:, options:, raise_exception: true)
+      # Ensure save folder path exists
+      FileUtils.mkdir_p(SAVE_FOLDER)
+
+      begin
+        urls.each do | url |
+          uri = URI.parse(url)
+
+          file_path = save_page_to_local(uri: uri)
+          print_page_metadata(file_path: file_path) if !!options[:metadata]
+        end
+      rescue => e
+        puts e
+        raise e if raise_exception
+      end
+    end
+
+    def fetch_pages(args)
+      options = parse_options(args)
+
+      fetch_pages_data(urls: ARGV, options: options)
+    end
+  end
+end
+
+PageCrawler.fetch_pages(ARGV)
